@@ -1,4 +1,4 @@
-import { extractOrderId } from "./ids";
+import { extractOrderId, lastRealOrderId } from "./order-id";
 import { gateOffTopic, SUPPORTER_INTRO } from "./intro";
 import { runTool } from "./tools";
 import type { ChatAttachment, ChatMessage } from "./types";
@@ -7,10 +7,6 @@ type Result = { reply: string; attachments: ChatAttachment[] };
 
 function lastUser(messages: ChatMessage[]) {
   return [...messages].reverse().find((m) => m.role === "user");
-}
-
-function historyText(messages: ChatMessage[]) {
-  return messages.map((m) => m.content).join("\n");
 }
 
 function wants(text: string, words: RegExp) {
@@ -35,15 +31,18 @@ export async function fallbackAgent(input: {
   const user = lastUser(input.messages);
   const text = (user?.content ?? "").trim();
   const lower = text.toLowerCase();
-  const orderId = extractOrderId(text) ?? extractOrderId(historyText(input.messages)) ?? input.activeOrderId;
+  const orderId = extractOrderId(text) ?? lastRealOrderId(input.messages, input.activeOrderId);
   const ctx = { customerId: input.customerId, imageUrl: input.imageUrl };
   const confirmed = /\b(yes|yeah|yep|confirm|go ahead|do it|please cancel|ha|haan)\b/i.test(text);
 
   const lastAssistant = [...input.messages].reverse().find((m) => m.role === "assistant");
+  const waitingForConfirm = Boolean(lastAssistant && /reply yes|to confirm/i.test(lastAssistant.content));
+  const pendingReplace = Boolean(lastAssistant && /replace|replacement/i.test(lastAssistant.content));
+  const pendingCancel = Boolean(lastAssistant && /\bcancel/i.test(lastAssistant.content));
   const gated = gateOffTopic(text, {
     hasImage: Boolean(input.imageUrl),
     orderIdInPlay: orderId,
-    waitingForConfirm: Boolean(lastAssistant && /reply yes|to confirm/i.test(lastAssistant.content)),
+    waitingForConfirm,
   });
   if (gated) {
     return { reply: gated, attachments: [] };
@@ -84,8 +83,27 @@ export async function fallbackAgent(input: {
     };
   }
 
+  if (waitingForConfirm && confirmed && orderId && pendingReplace && !wants(lower, /cancel/)) {
+    const result = await runTool("replace_order", { orderId, reason: text }, ctx);
+    if (!result.attachments.length) {
+      return { reply: toolError(result.text, "Could not start a replacement."), attachments: [] };
+    }
+    return {
+      reply: `Replacement is moving for ${orderId}. Keep both IDs — original and the new shipment.`,
+      attachments: result.attachments,
+    };
+  }
+
+  if (waitingForConfirm && confirmed && orderId && pendingCancel && !wants(lower, /replace/)) {
+    const result = await runTool("cancel_order", { orderId, reason: text }, ctx);
+    if (!result.attachments.length) {
+      return { reply: toolError(result.text, "Could not cancel that order."), attachments: [] };
+    }
+    return { reply: `Done. ${orderId} is cancelled.`, attachments: result.attachments };
+  }
+
   if (wants(lower, /cancel/)) {
-    if (!orderId) return { reply: "Which unique ID should I cancel? It looks like SPT-XXXX-XXXXXX.", attachments: [] };
+    if (!orderId) return { reply: "Which unique ID should I cancel? It looks like SPT-DEMO-TRCK01.", attachments: [] };
     if (!confirmed && !wants(lower, /please cancel|cancel it|cancel now|cancel this/)) {
       return {
         reply: `I can cancel ${orderId} only if it is still confirmed or packed. Reply YES to confirm.`,
@@ -151,7 +169,9 @@ export async function fallbackAgent(input: {
 
   if (orderId) {
     const result = await runTool("lookup_order", { orderId }, ctx);
-    if (!result.attachments.length) return { reply: "I couldn't find that unique ID. Check the spacing: SPT-XXXX-XXXXXX.", attachments: [] };
+    if (!result.attachments.length) {
+      return { reply: "I couldn't find that unique ID. Use a real ID such as SPT-DEMO-TRCK01.", attachments: [] };
+    }
     return {
       reply: `Found ${orderId}. I can track it, cancel (if not shipped), replace after delivery, take COD via QR, or file a photo complaint.`,
       attachments: result.attachments,

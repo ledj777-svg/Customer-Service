@@ -10,7 +10,7 @@ I only help with your orders. Here's what I can do:
 • Generate a UPI QR to pay cash-on-delivery
 • File a complaint with a photo of what you received
 
-Share a unique order ID like SPT-XXXX-XXXXXX and tell me what you need.
+Share a unique order ID (SPT- then 4 characters, a dash, then 6 more) and tell me what you need.
 Demo IDs: SPT-DEMO-TRCK01 (track + QR), SPT-DEMO-CNCL02 (cancel), SPT-DEMO-RPLC03 (replace / complaint).`;
 
 const ON_TOPIC =
@@ -27,7 +27,7 @@ I can:
 • Generate a COD payment QR
 • File a complaint with a photo
 
-Share a unique order ID (SPT-XXXX-XXXXXX) and tell me what you need.`;
+Share a unique order ID (SPT- then 4 characters, a dash, then 6 more) and tell me what you need.`;
 const ACK_REPLY =
   "You're welcome. I'm here if you need to track, cancel, replace, pay COD, or file a photo complaint.";
 

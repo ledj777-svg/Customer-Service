@@ -1,12 +1,13 @@
 import OpenAI from "openai";
 import { fallbackAgent } from "./fallback-agent";
-import { extractOrderId } from "./order-id";
+import { lastRealOrderId } from "./order-id";
 import { gateOffTopic, SUPPORTER_INTRO } from "./intro";
 import { runTool, TOOL_DEFINITIONS } from "./tools";
 import type { ChatAttachment, ChatMessage } from "./types";
 
 const SYSTEM = `You are SUPPORTER, Cartly's customer-support specialist.
-Cartly is an Indian marketplace. Every order has a unique ID like SPT-XXXX-XXXXXX.
+Cartly is an Indian marketplace. Every order has a unique ID like SPT-DEMO-TRCK01.
+Never treat "SPT-XXXX-XXXXXX" as a real order — that is only a format hint.
 
 You can ONLY:
 - look up and track orders (live courier location)
@@ -29,7 +30,7 @@ Casual greetings (hi, hey mate, hello, what's up) get a friendly hello and a sho
 Rules:
 - Never invent order data. Always call tools.
 - Ask for the unique ID if it is missing.
-- Confirm before cancel or replace.
+- Confirm before cancel or replace. If the user replies YES, use the last real unique ID from the conversation — never a placeholder.
 - If the user uploaded a photo, inspect it, describe the issue plainly, then file_complaint.
 - Keep replies short, warm, and specific. Mention the unique ID.
 - Demo IDs: SPT-DEMO-TRCK01 (in transit, COD unpaid), SPT-DEMO-CNCL02 (fresh, cancellable), SPT-DEMO-RPLC03 (delivered).
@@ -67,10 +68,7 @@ export async function runSupporter(input: {
 }): Promise<{ reply: string; attachments: ChatAttachment[]; engine: "grok" | "local" }> {
   const lastUser = [...input.messages].reverse().find((m) => m.role === "user");
   const lastText = lastUser?.content ?? "";
-  const orderIdInPlay =
-    extractOrderId(lastText) ??
-    [...input.messages].reverse().map((m) => extractOrderId(m.content)).find(Boolean) ??
-    input.activeOrderId;
+  const orderIdInPlay = lastRealOrderId(input.messages, input.activeOrderId);
   const lastAssistant = [...input.messages].reverse().find((m) => m.role === "assistant");
   const gated = lastUser
     ? gateOffTopic(lastText, {
@@ -90,10 +88,10 @@ export async function runSupporter(input: {
   }
 
   const apiMessages = toApiMessages(input.messages);
-  if (input.activeOrderId) {
+  if (orderIdInPlay || input.customerId) {
     apiMessages.splice(1, 0, {
       role: "system",
-      content: `Active unique ID in the widget: ${input.activeOrderId}. Customer browser id: ${input.customerId ?? "unknown"}.`,
+      content: `Last real unique ID in this chat: ${orderIdInPlay ?? "none"}. Customer browser id: ${input.customerId ?? "unknown"}. Never look up SPT-XXXX-XXXXXX.`,
     });
   }
 

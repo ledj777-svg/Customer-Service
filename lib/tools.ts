@@ -17,7 +17,7 @@ export const TOOL_DEFINITIONS = [
     type: "function" as const,
     function: {
       name: "lookup_order",
-      description: "Look up a Cartly order by its unique ID (SPT-XXXX-XXXXXX).",
+      description: "Look up a Cartly order by its unique ID (SPT- then 4 characters, a dash, then 6 more). Never use SPT-XXXX-XXXXXX — that is only a format hint.",
       parameters: {
         type: "object",
         properties: { orderId: { type: "string", description: "Unique order ID" } },

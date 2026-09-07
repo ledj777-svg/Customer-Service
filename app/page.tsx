@@ -16,7 +16,7 @@ export default function Home() {
           </p>
           <ol className="mt-8 grid gap-3 sm:grid-cols-3">
             {[
-              ["01", "Place the order", "COD or prepaid. You get SPT-XXXX-XXXXXX."],
+              ["01", "Place the order", "COD or prepaid. You get a unique SPT ID."],
               ["02", "Open SUPPORTER", "Tap the purple chat icon. Paste the unique ID."],
               ["03", "Act on it", "Track, cancel, replace, pay, or complain."],
             ].map(([n, t, d]) => (
