@@ -50,10 +50,10 @@ export function buildStops(order: Order): TrackingStop[] {
   const hubCoords = cityCoords(hub);
   const origin = cityCoords("Bengaluru");
   return [
-    { code: "WH", label: "Cartly warehouse", city: "Bengaluru", lat: origin.lat, lng: origin.lng },
-    { code: "HUB", label: "Sortation hub", city: hub, lat: hubCoords.lat, lng: hubCoords.lng },
-    { code: "DC", label: "Local delivery centre", city: dest, lat: destCoords.lat + 0.04, lng: destCoords.lng - 0.03 },
-    { code: "DOOR", label: "Your address", city: dest, lat: destCoords.lat, lng: destCoords.lng },
+    { code: "WH", label: "Warehouse", city: "Bengaluru", lat: origin.lat, lng: origin.lng },
+    { code: "HUB", label: "Hub", city: hub, lat: hubCoords.lat, lng: hubCoords.lng },
+    { code: "DC", label: "Local centre", city: dest, lat: destCoords.lat + 0.04, lng: destCoords.lng - 0.03 },
+    { code: "DOOR", label: "Your door", city: dest, lat: destCoords.lat, lng: destCoords.lng },
   ];
 }
 
