@@ -84,9 +84,12 @@ export async function runSupporter(input: {
   }
 
   const structured =
-    /cancel|replace|refund|money back|size doesn|wrong colou?r|quality is not/i.test(
+    /track|cancel|replace|refund|money back|complaint|cod|qr|pay|size doesn|wrong colou?r|quality is not/i.test(
       lastText,
-    ) || Boolean(lastAssistant && /what is the reason|pick one option/i.test(lastAssistant.content));
+    ) ||
+      Boolean(
+        lastAssistant && /what is the reason|pick one option|unique order id|live location/i.test(lastAssistant.content),
+      );
 
   const grok = client();
   if (!grok || structured) {

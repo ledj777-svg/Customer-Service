@@ -153,7 +153,18 @@ export async function fallbackAgent(input: {
     return { reply: `Ticket opened on ${orderId}. Add a photo anytime to strengthen the claim.`, attachments: result.attachments };
   }
 
-  if (orderId && wants(lower, /track|where|location|status|eta/)) {
+  const askedForId = Boolean(lastAssistant && /unique (order )?id/i.test(lastAssistant.content));
+  const trackIntent =
+    wants(lower, /track|where|location|status|eta/) ||
+    Boolean(askedForId && lastAssistant && /track|live location/i.test(lastAssistant.content));
+
+  if (trackIntent) {
+    if (!orderId) {
+      return {
+        reply: "Sure — I can track that. Send your unique order ID (tap TRCK01 below, or paste one like SPT-DEMO-TRCK01).",
+        attachments: [],
+      };
+    }
     const result = await runTool("track_order", { orderId }, ctx);
     if (!result.attachments.length) return { reply: "That unique ID is not in the system.", attachments: [] };
     return { reply: `Live location for ${orderId} is on the map below.`, attachments: result.attachments };
@@ -167,6 +178,13 @@ export async function fallbackAgent(input: {
     return {
       reply: `Found ${orderId}. I can track it, cancel (if not shipped), replace after delivery, take COD via QR, or file a photo complaint.`,
       attachments: result.attachments,
+    };
+  }
+
+  if (wants(lower, /track|cancel|replace|pay|qr|cod|complaint|refund/)) {
+    return {
+      reply: "That's something I can help with. Send your unique order ID and I'll take the next step.",
+      attachments: [],
     };
   }
 
