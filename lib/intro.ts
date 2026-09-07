@@ -17,9 +17,38 @@ const ON_TOPIC =
   /\b(order|orders|track|tracking|where.*package|courier|delivery|deliver|eta|cancel|replace|replacement|exchange|return|refund|cod|cash on delivery|upi|qr|pay|payment|paid|complaint|complain|damaged|broken|wrong item|missing|photo|image|upload|ticket|unique id|spt-|my bag|checkout|cartly|supporter|help)\b/i;
 
 const CONFIRMING = /\b(yes|yeah|yep|confirm|go ahead|do it|please cancel|ha|haan)\b/i;
-const GREETING = /^(hi|hello|hey|yo|sup|help|what can you do|who are you)[\s!.,?]*$/i;
+const FILLER = /^(there|mate|bro|buddy|man|guys|team|dear|sir|mam|ji|friend|pal)$/;
+const GREETING_REPLY = `Hey! I'm SUPPORTER, Cartly's order desk.
+
+I can:
+• Track your package
+• Cancel an order before it ships
+• Replace a delivered order
+• Generate a COD payment QR
+• File a complaint with a photo
+
+Share a unique order ID (SPT-XXXX-XXXXXX) and tell me what you need.`;
 const ACK_REPLY =
   "You're welcome. I'm here if you need to track, cancel, replace, pay COD, or file a photo complaint.";
+
+export function isGreeting(text: string) {
+  const t = text
+    .trim()
+    .toLowerCase()
+    .replace(/[!?.,]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!t || extractOrderId(t)) return false;
+  if (/\b(track|cancel|replace|pay|qr|complaint|weather|code|joke|news)\b/i.test(t)) return false;
+  if (/^(what'?s up|wassup|how are you|how r u|hows it going|good (morning|afternoon|evening|night)|who are you|what can you do|help me|help)$/.test(t)) {
+    return true;
+  }
+  const lead = t.match(/^(hi|hello|hey|yo|sup|hiya|howdy|hola)\s*(.*)$/);
+  if (!lead) return false;
+  const rest = lead[2].trim();
+  if (!rest) return true;
+  return rest.split(" ").every((word) => FILLER.test(word));
+}
 
 export function isAcknowledgement(text: string) {
   const t = text.trim().toLowerCase();
@@ -41,6 +70,7 @@ export function isOrderContext(text: string, hasImage = false) {
 
 export function shouldReintroduce(text: string, opts?: { hasImage?: boolean; orderIdInPlay?: string }) {
   if (opts?.hasImage) return false;
+  if (isGreeting(text) || isAcknowledgement(text)) return false;
   if (isOrderContext(text, opts?.hasImage)) return false;
   if (opts?.orderIdInPlay && CONFIRMING.test(text)) return false;
   return true;
@@ -54,8 +84,8 @@ export function gateOffTopic(
   text: string,
   opts?: { hasImage?: boolean; orderIdInPlay?: string; waitingForConfirm?: boolean },
 ) {
-  if (!text.trim() && !opts?.hasImage) return SUPPORTER_INTRO;
-  if (GREETING.test(text.trim())) return SUPPORTER_INTRO;
+  if (!text.trim() && !opts?.hasImage) return GREETING_REPLY;
+  if (isGreeting(text)) return GREETING_REPLY;
   if (isAcknowledgement(text) && !opts?.waitingForConfirm) return ACK_REPLY;
   if (shouldReintroduce(text, opts)) return offTopicReply();
   return null;
