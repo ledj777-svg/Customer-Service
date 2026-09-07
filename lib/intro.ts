@@ -14,7 +14,7 @@ Share a unique order ID (SPT- then 4 characters, a dash, then 6 more) and tell m
 Demo IDs: SPT-DEMO-TRCK01 (track + QR), SPT-DEMO-CNCL02 (cancel), SPT-DEMO-RPLC03 (replace / complaint).`;
 
 const ON_TOPIC =
-  /\b(order|orders|track|tracking|where.*package|courier|delivery|deliver|eta|cancel|replace|replacement|exchange|return|refund|cod|cash on delivery|upi|qr|pay|payment|paid|complaint|complain|damaged|broken|wrong item|missing|photo|image|upload|ticket|unique id|spt-|my bag|checkout|cartly|supporter|help)\b/i;
+  /\b(order|orders|track|tracking|where.*package|courier|delivery|deliver|eta|cancel|replace|replacement|exchange|return|refund|money back|upi|qr|pay|payment|paid|complaint|complain|damaged|broken|wrong item|missing|photo|image|upload|ticket|unique id|spt-|my bag|checkout|cartly|supporter|help|size|colour|color|quality|review)\b/i;
 
 const CONFIRMING = /\b(yes|yeah|yep|confirm|go ahead|do it|please cancel|ha|haan)\b/i;
 const FILLER = /^(there|mate|bro|buddy|man|guys|team|dear|sir|mam|ji|friend|pal)$/;
@@ -82,9 +82,15 @@ export function offTopicReply() {
 
 export function gateOffTopic(
   text: string,
-  opts?: { hasImage?: boolean; orderIdInPlay?: string; waitingForConfirm?: boolean },
+  opts?: {
+    hasImage?: boolean;
+    orderIdInPlay?: string;
+    waitingForConfirm?: boolean;
+    waitingForReason?: boolean;
+  },
 ) {
   if (!text.trim() && !opts?.hasImage) return GREETING_REPLY;
+  if (opts?.waitingForReason) return null;
   if (isGreeting(text)) return GREETING_REPLY;
   if (isAcknowledgement(text) && !opts?.waitingForConfirm) return ACK_REPLY;
   if (shouldReintroduce(text, opts)) return offTopicReply();

@@ -30,7 +30,9 @@ Casual greetings (hi, hey mate, hello, what's up) get a friendly hello and a sho
 Rules:
 - Never invent order data. Always call tools.
 - Ask for the unique ID if it is missing.
-- Confirm before cancel or replace. If the user replies YES, use the last real unique ID from the conversation — never a placeholder.
+- Before cancel or replace, always ask the reason with these options: Size doesn't fit, Wrong colour, Quality is not as expected, Write my own review.
+- After they pick or type a reason, thank them for the feedback.
+- If they ask about a refund, say the amount will be deposited to the registered UPI ID within 1 business day.
 - If the user uploaded a photo, inspect it, describe the issue plainly, then file_complaint.
 - Keep replies short, warm, and specific. Mention the unique ID.
 - Demo IDs: SPT-DEMO-TRCK01 (in transit, COD unpaid), SPT-DEMO-CNCL02 (fresh, cancellable), SPT-DEMO-RPLC03 (delivered).
@@ -81,10 +83,15 @@ export async function runSupporter(input: {
     return { reply: gated, attachments: [], engine: client() ? "grok" : "local" };
   }
 
+  const structured =
+    /cancel|replace|refund|money back|size doesn|wrong colou?r|quality is not|write my own review|type your review/i.test(
+      lastText,
+    ) || Boolean(lastAssistant && /what is the reason|please type your review|pick one option/i.test(lastAssistant.content));
+
   const grok = client();
-  if (!grok) {
+  if (!grok || structured) {
     const local = await fallbackAgent(input);
-    return { ...local, engine: "local" };
+    return { ...local, engine: grok ? "grok" : "local" };
   }
 
   const apiMessages = toApiMessages(input.messages);

@@ -8,9 +8,11 @@ import { TrackMap } from "./TrackMap";
 export function Attachments({
   items,
   onPay,
+  onChoose,
 }: {
   items?: ChatAttachment[];
   onPay?: (orderId: string) => void;
+  onChoose?: (label: string) => void;
 }) {
   if (!items?.length) return null;
   return (
@@ -72,6 +74,22 @@ export function Attachments({
                 <img src={item.complaint.imageUrl} alt="Uploaded evidence" className="mt-2 max-h-40 rounded-xl object-cover" />
               ) : null}
               <p className="mt-1 text-xs">{item.complaint.status} · {when(item.complaint.createdAt)}</p>
+            </div>
+          );
+        }
+        if (item.type === "choices") {
+          return (
+            <div key={i} className="mt-3 flex flex-col gap-2">
+              {item.options.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className="rounded-full border border-[#5B2FD6]/25 bg-white px-3 py-2 text-left text-sm text-[#5B2FD6] hover:bg-[#f3f1f6]"
+                  onClick={() => onChoose?.(option)}
+                >
+                  {option}
+                </button>
+              ))}
             </div>
           );
         }

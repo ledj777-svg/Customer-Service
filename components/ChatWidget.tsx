@@ -156,7 +156,13 @@ export function ChatWidget() {
                     <img src={msg.imageUrl} alt="Uploaded" className="mb-2 max-h-32 rounded-xl object-cover" />
                   ) : null}
                   {msg.content}
-                  {msg.role === "assistant" ? <Attachments items={msg.attachments} onPay={markPaid} /> : null}
+                  {msg.role === "assistant" ? (
+                    <Attachments
+                      items={msg.attachments}
+                      onPay={markPaid}
+                      onChoose={i === messages.length - 1 && !busy ? (label) => void send(label) : undefined}
+                    />
+                  ) : null}
                 </div>
               </div>
             ))}

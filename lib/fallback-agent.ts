@@ -1,5 +1,7 @@
 import { extractOrderId, lastRealOrderId } from "./order-id";
 import { gateOffTopic, SUPPORTER_INTRO } from "./intro";
+import { CUSTOM_REASON, reasonPrompt, REFUND_REPLY, refundFor, thanksForFeedback } from "./reasons";
+import { getOrder } from "./orders";
 import { runTool } from "./tools";
 import type { ChatAttachment, ChatMessage } from "./types";
 
@@ -37,12 +39,15 @@ export async function fallbackAgent(input: {
 
   const lastAssistant = [...input.messages].reverse().find((m) => m.role === "assistant");
   const waitingForConfirm = Boolean(lastAssistant && /reply yes|to confirm/i.test(lastAssistant.content));
+  const waitingForReason = Boolean(lastAssistant && /what is the reason|pick one option/i.test(lastAssistant.content));
+  const waitingForReview = Boolean(lastAssistant && /please type your review/i.test(lastAssistant.content));
   const pendingReplace = Boolean(lastAssistant && /replace|replacement/i.test(lastAssistant.content));
   const pendingCancel = Boolean(lastAssistant && /\bcancel/i.test(lastAssistant.content));
   const gated = gateOffTopic(text, {
     hasImage: Boolean(input.imageUrl),
     orderIdInPlay: orderId,
     waitingForConfirm,
+    waitingForReason: waitingForReason || waitingForReview,
   });
   if (gated) {
     return { reply: gated, attachments: [] };
@@ -83,53 +88,52 @@ export async function fallbackAgent(input: {
     };
   }
 
-  if (waitingForConfirm && confirmed && orderId && pendingReplace && !wants(lower, /cancel/)) {
-    const result = await runTool("replace_order", { orderId, reason: text }, ctx);
-    if (!result.attachments.length) {
-      return { reply: toolError(result.text, "Could not start a replacement."), attachments: [] };
+  async function finishAction(kind: "cancel" | "replace", reason: string) {
+    if (!orderId) {
+      return { reply: `Share the unique ID you want to ${kind}.`, attachments: [] as ChatAttachment[] };
     }
-    return {
-      reply: `Replacement is moving for ${orderId}. Keep both IDs — original and the new shipment.`,
-      attachments: result.attachments,
-    };
+    const tool = kind === "cancel" ? "cancel_order" : "replace_order";
+    const result = await runTool(tool, { orderId, reason }, ctx);
+    if (!result.attachments.length) {
+      return { reply: toolError(result.text, `Could not ${kind} that order.`), attachments: [] };
+    }
+    const order = (await getOrder(orderId))!;
+    return { reply: thanksForFeedback(kind, order, reason), attachments: result.attachments };
   }
 
-  if (waitingForConfirm && confirmed && orderId && pendingCancel && !wants(lower, /replace/)) {
-    const result = await runTool("cancel_order", { orderId, reason: text }, ctx);
-    if (!result.attachments.length) {
-      return { reply: toolError(result.text, "Could not cancel that order."), attachments: [] };
-    }
-    return { reply: `Done. ${orderId} is cancelled.`, attachments: result.attachments };
+  if (waitingForReview && orderId) {
+    const kind: "cancel" | "replace" = pendingReplace && !pendingCancel ? "replace" : pendingCancel ? "cancel" : pendingReplace ? "replace" : "cancel";
+    return finishAction(kind, text);
   }
 
-  if (wants(lower, /cancel/)) {
-    if (!orderId) return { reply: "Which unique ID should I cancel? It looks like SPT-DEMO-TRCK01.", attachments: [] };
-    if (!confirmed && !wants(lower, /please cancel|cancel it|cancel now|cancel this/)) {
+  if (waitingForReason && orderId) {
+    const kind: "cancel" | "replace" = pendingReplace && !pendingCancel ? "replace" : "cancel";
+    if (text.trim().toLowerCase() === CUSTOM_REASON.toLowerCase()) {
       return {
-        reply: `I can cancel ${orderId} only if it is still confirmed or packed. Reply YES to confirm.`,
+        reply: "Please type your review — what went wrong, or what you expected.",
         attachments: [],
       };
     }
-    const result = await runTool("cancel_order", { orderId, reason: text }, ctx);
-    if (!result.attachments.length) {
-      return { reply: toolError(result.text, "Could not cancel that order."), attachments: [] };
+    if (/^(yes|yeah|yep|ok|okay)$/i.test(text.trim())) {
+      return reasonPrompt(kind, orderId);
     }
-    return { reply: `Done. ${orderId} is cancelled.`, attachments: result.attachments };
+    return finishAction(kind, text);
+  }
+
+  if (wants(lower, /refund|money back|when.{0,20}(money|amount|upi)/)) {
+    if (!orderId) return { reply: REFUND_REPLY, attachments: [] };
+    const order = await getOrder(orderId);
+    return { reply: order ? refundFor(order) : REFUND_REPLY, attachments: [] };
+  }
+
+  if (wants(lower, /cancel/)) {
+    if (!orderId) return { reply: "Which unique ID should I cancel? Try SPT-DEMO-CNCL02.", attachments: [] };
+    return reasonPrompt("cancel", orderId);
   }
 
   if (wants(lower, /replace|replacement|exchange/)) {
     if (!orderId) return { reply: "Share the unique ID of the delivered order you want replaced.", attachments: [] };
-    if (!confirmed && !wants(lower, /replace it|replace now|please replace/)) {
-      return {
-        reply: `Replacement for ${orderId} is free if it was delivered in the last 7 days. Reply YES and tell me what was wrong.`,
-        attachments: [],
-      };
-    }
-    const result = await runTool("replace_order", { orderId, reason: text }, ctx);
-    if (!result.attachments.length) {
-      return { reply: toolError(result.text, "Could not start a replacement."), attachments: [] };
-    }
-    return { reply: `Replacement is moving. Keep both IDs — original and the new shipment.`, attachments: result.attachments };
+    return reasonPrompt("replace", orderId);
   }
 
   if (wants(lower, /qr|upi|pay|cod|cash on delivery|payment/)) {

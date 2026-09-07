@@ -113,7 +113,8 @@ export type ChatAttachment =
       paid: boolean;
     }
   | { type: "complaint"; complaint: Complaint }
-  | { type: "receipt"; title: string; body: string; tone: "ok" | "warn" | "info" };
+  | { type: "receipt"; title: string; body: string; tone: "ok" | "warn" | "info" }
+  | { type: "choices"; options: string[] };
 
 export type ChatMessage = {
   role: ChatRole;
