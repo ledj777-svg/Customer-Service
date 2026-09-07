@@ -4,8 +4,13 @@ import type { Order, StoreShape } from "./types";
 import { seedOrders } from "./seed";
 import { writableDir } from "./runtime";
 
-const DATA_DIR = writableDir("data");
-const DATA_FILE = path.join(DATA_DIR, "store.json");
+function getDataDir() {
+  return writableDir("data");
+}
+
+function getDataFile() {
+  return path.join(getDataDir(), "store.json");
+}
 
 let memory: StoreShape | null = null;
 let queue: Promise<void> = Promise.resolve();
@@ -28,8 +33,10 @@ function withDemos(store: StoreShape): StoreShape {
 async function persist(store: StoreShape) {
   memory = store;
   try {
-    await mkdir(DATA_DIR, { recursive: true });
-    await writeFile(DATA_FILE, JSON.stringify(store), "utf8");
+    const dir = getDataDir();
+    const file = getDataFile();
+    await mkdir(dir, { recursive: true });
+    await writeFile(file, JSON.stringify(store), "utf8");
   } catch {
     // Serverless filesystems can be read-only outside /tmp. Memory still holds the store.
   }
@@ -38,12 +45,17 @@ async function persist(store: StoreShape) {
 async function readRaw(): Promise<StoreShape> {
   if (memory) return memory;
   try {
-    const raw = await readFile(DATA_FILE, "utf8");
+    const file = getDataFile();
+    const raw = await readFile(file, "utf8");
     memory = withDemos(JSON.parse(raw) as StoreShape);
     return memory;
   } catch {
     memory = seedStore();
-    await persist(memory);
+    try {
+      await persist(memory);
+    } catch {
+      // safe fallback
+    }
     return memory;
   }
 }
@@ -61,7 +73,11 @@ export function withStore<T>(fn: (store: StoreShape) => Promise<T> | T): Promise
   return enqueue(async () => {
     const store = await readRaw();
     const result = await fn(store);
-    await persist(store);
+    try {
+      await persist(store);
+    } catch {
+      // safe in-memory fallback
+    }
     return result;
   });
 }
