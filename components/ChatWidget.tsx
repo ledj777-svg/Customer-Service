@@ -235,7 +235,7 @@ export function ChatWidget() {
               </div>
             </div>
             <p className="mt-2 text-center text-[10px] text-[#9a94a6]">
-              {engine === "grok" ? "Powered by Grok · SUPPORTER" : "Powered by SUPPORTER"}
+              Powered by Cartly
             </p>
           </form>
         </aside>
