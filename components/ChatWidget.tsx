@@ -25,7 +25,7 @@ export function ChatWidget() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string>();
   const [busy, setBusy] = useState(false);
-  const [engine, setEngine] = useState<"grok" | "local" | null>(null);
+  const [, setEngine] = useState<"grok" | "local" | null>(null);
   const [messages, setMessages] = useState<UiMessage[]>([
     {
       role: "assistant",
@@ -234,7 +234,10 @@ export function ChatWidget() {
                 </button>
               </div>
             </div>
-            <p className="mt-2 text-center text-[10px] text-[#9a94a6]">
+            <p className="mt-2 flex items-center justify-center gap-1.5 pb-1 text-[11px] text-[#6b6578]">
+              <span className="grid h-4 w-4 place-items-center rounded-full bg-[#5B2FD6] text-[8px] font-black text-white">
+                C
+              </span>
               Powered by Cartly
             </p>
           </form>
