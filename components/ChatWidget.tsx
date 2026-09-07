@@ -255,19 +255,17 @@ export function ChatWidget() {
             <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         ) : (
-          <svg viewBox="0 0 48 48" className="h-8 w-8" aria-hidden="true">
-            <path
-              fill="currentColor"
-              d="M10 12.5c0-2.5 2-4.5 4.5-4.5h19c2.5 0 4.5 2 4.5 4.5v15c0 2.5-2 4.5-4.5 4.5H22.2L15 38v-6.5H14.5C12 31.5 10 29.5 10 27z"
-            />
-            <path
-              d="M18.2 22.2c1.4 2.2 3.4 3.4 5.8 3.4s4.4-1.2 5.8-3.4"
-              stroke="#5B2FD6"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              fill="none"
-            />
-          </svg>
+          <span className="relative grid h-9 w-9 place-items-center">
+            <svg viewBox="0 0 48 48" className="absolute inset-0 h-9 w-9" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M10 12.5c0-2.5 2-4.5 4.5-4.5h19c2.5 0 4.5 2 4.5 4.5v15c0 2.5-2 4.5-4.5 4.5H22.2L15 38v-6.5H14.5C12 31.5 10 29.5 10 27z"
+              />
+            </svg>
+            <span className="display relative -translate-y-[3px] text-[1.05rem] font-semibold italic leading-none text-[#5B2FD6]">
+              S
+            </span>
+          </span>
         )}
       </button>
     </>
