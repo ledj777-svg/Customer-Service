@@ -8,7 +8,7 @@ export default function Home() {
           <p className="chip mb-4">Order ID · live desk · photo claims</p>
           <h1 className="display text-5xl leading-[1.05] sm:text-7xl">
             Shop on Cartly.
-            <span className="block text-[var(--teal)]">Talk to SUPPORTER.</span>
+            <span className="block text-[#5B2FD6]">Talk to SUPPORTER.</span>
           </h1>
           <p className="mt-5 max-w-xl text-lg text-[var(--ink-soft)]">
             Every checkout mints a unique ID. Use it to cancel before the truck leaves, replace a bad delivery,

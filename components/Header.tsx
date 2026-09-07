@@ -9,7 +9,7 @@ export function Header({ onCart }: { onCart?: () => void }) {
     <header className="sticky top-0 z-20 border-b border-[var(--line)] bg-[color:color-mix(in_srgb,var(--paper)_86%,white)] backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3">
         <Link href="/" className="flex items-center gap-3">
-          <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[var(--teal-deep)] text-sm font-semibold tracking-widest text-[#f4efe6]">
+          <span className="grid h-10 w-10 place-items-center rounded-full bg-[#5B2FD6] text-sm font-semibold tracking-widest text-white shadow-[0_8px_18px_rgba(91,47,214,0.28)]">
             C
           </span>
           <span>
