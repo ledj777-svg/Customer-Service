@@ -6,6 +6,7 @@ import { runTool } from "./tools";
 import type { ChatAttachment, ChatMessage } from "./types";
 
 type Result = { reply: string; attachments: ChatAttachment[] };
+type Action = "track" | "cancel" | "replace" | "pay" | "complaint";
 
 function lastUser(messages: ChatMessage[]) {
   return [...messages].reverse().find((m) => m.role === "user");
@@ -13,6 +14,39 @@ function lastUser(messages: ChatMessage[]) {
 
 function wants(text: string, words: RegExp) {
   return words.test(text);
+}
+
+function actionFromText(text: string): Action | undefined {
+  const t = text.toLowerCase();
+  if (/\bcancel\b/.test(t)) return "cancel";
+  if (/\breplace|replacement|exchange\b/.test(t)) return "replace";
+  if (/\bcomplaint|damaged|broken|wrong item\b/.test(t)) return "complaint";
+  if (/\b(qr|upi|pay|cod|cash on delivery)\b/.test(t) && !/\brefund\b/.test(t)) return "pay";
+  if (/\btrack|where is|location|status|eta\b/.test(t)) return "track";
+}
+
+function actionFromAssistant(content?: string): Action | undefined {
+  if (!content) return;
+  const t = content.toLowerCase();
+  if (/to cancel your order|want to cancel/.test(t)) return "cancel";
+  if (/to replace your order|want to replace/.test(t)) return "replace";
+  if (/file a complaint/.test(t)) return "complaint";
+  if (/cod qr|payment qr/.test(t)) return "pay";
+  if (/to track your order/.test(t)) return "track";
+}
+
+function askForId(action: Action): Result {
+  const labels: Record<Action, string> = {
+    track: "track your order",
+    cancel: "cancel your order",
+    replace: "replace your order",
+    pay: "generate the COD QR",
+    complaint: "file a complaint",
+  };
+  return {
+    reply: `Please enter your unique order ID to ${labels[action]}.\nTap TRCK01, CNCL02, or RPLC03 below, or paste your ID, then send.`,
+    attachments: [],
+  };
 }
 
 function toolError(raw: string, fallback: string) {
@@ -33,15 +67,18 @@ export async function fallbackAgent(input: {
   const user = lastUser(input.messages);
   const text = (user?.content ?? "").trim();
   const lower = text.toLowerCase();
-  const orderId = extractOrderId(text) ?? lastRealOrderId(input.messages, input.activeOrderId);
+  const idInMessage = extractOrderId(text);
   const ctx = { customerId: input.customerId, imageUrl: input.imageUrl };
   const confirmed = /\b(yes|yeah|yep|confirm|go ahead|do it|please cancel|ha|haan)\b/i.test(text);
+  const chosen = actionFromText(text);
 
   const lastAssistant = [...input.messages].reverse().find((m) => m.role === "assistant");
   const waitingForConfirm = Boolean(lastAssistant && /reply yes|to confirm/i.test(lastAssistant.content));
   const waitingForReason = Boolean(lastAssistant && /what is the reason|pick one option/i.test(lastAssistant.content));
   const pendingReplace = Boolean(lastAssistant && /replace|replacement/i.test(lastAssistant.content));
   const pendingCancel = Boolean(lastAssistant && /\bcancel/i.test(lastAssistant.content));
+  const pendingAction = actionFromAssistant(lastAssistant?.content);
+  const orderId = idInMessage ?? lastRealOrderId(input.messages, input.activeOrderId);
   const gated = gateOffTopic(text, {
     hasImage: Boolean(input.imageUrl),
     orderIdInPlay: orderId,
@@ -87,6 +124,10 @@ export async function fallbackAgent(input: {
     };
   }
 
+  if (chosen && !idInMessage) {
+    return askForId(chosen);
+  }
+
   async function finishAction(kind: "cancel" | "replace", reason: string) {
     if (!orderId) {
       return { reply: `Share the unique ID you want to ${kind}.`, attachments: [] as ChatAttachment[] };
@@ -114,18 +155,20 @@ export async function fallbackAgent(input: {
     return { reply: order ? refundFor(order) : REFUND_REPLY, attachments: [] };
   }
 
-  if (wants(lower, /cancel/)) {
-    if (!orderId) return { reply: "Which unique ID should I cancel? Try SPT-DEMO-CNCL02.", attachments: [] };
+  const action = chosen ?? (idInMessage ? pendingAction : undefined);
+
+  if (action === "cancel") {
+    if (!orderId) return askForId("cancel");
     return reasonPrompt("cancel", orderId);
   }
 
-  if (wants(lower, /replace|replacement|exchange/)) {
-    if (!orderId) return { reply: "Share the unique ID of the delivered order you want replaced.", attachments: [] };
+  if (action === "replace") {
+    if (!orderId) return askForId("replace");
     return reasonPrompt("replace", orderId);
   }
 
-  if (wants(lower, /qr|upi|pay|cod|cash on delivery|payment/)) {
-    if (!orderId) return { reply: "Give me the unique ID of the COD order and I will mint a UPI QR for that amount.", attachments: [] };
+  if (action === "pay" || (wants(lower, /paid|i paid|payment done|scanned/) && orderId)) {
+    if (!orderId) return askForId("pay");
     if (wants(lower, /paid|i paid|payment done|scanned/)) {
       const paid = await runTool("mark_cod_paid", { orderId }, ctx);
       if (paid.attachments.length) return { reply: `Payment captured for ${orderId}.`, attachments: paid.attachments };
@@ -140,8 +183,8 @@ export async function fallbackAgent(input: {
     };
   }
 
-  if (wants(lower, /complaint|damaged|broken|wrong item|missing|photo|image/)) {
-    if (!orderId) return { reply: "Upload a photo of what arrived and the unique order ID. I will open a ticket.", attachments: [] };
+  if (action === "complaint") {
+    if (!orderId) return askForId("complaint");
     const result = await runTool(
       "file_complaint",
       { orderId, description: text || "Customer complaint from chat." },
@@ -153,18 +196,8 @@ export async function fallbackAgent(input: {
     return { reply: `Ticket opened on ${orderId}. Add a photo anytime to strengthen the claim.`, attachments: result.attachments };
   }
 
-  const askedForId = Boolean(lastAssistant && /unique (order )?id/i.test(lastAssistant.content));
-  const trackIntent =
-    wants(lower, /track|where|location|status|eta/) ||
-    Boolean(askedForId && lastAssistant && /track|live location/i.test(lastAssistant.content));
-
-  if (trackIntent) {
-    if (!orderId) {
-      return {
-        reply: "Sure — I can track that. Send your unique order ID (tap TRCK01 below, or paste one like SPT-DEMO-TRCK01).",
-        attachments: [],
-      };
-    }
+  if (action === "track") {
+    if (!orderId) return askForId("track");
     const result = await runTool("track_order", { orderId }, ctx);
     if (!result.attachments.length) return { reply: "That unique ID is not in the system.", attachments: [] };
     return { reply: `Live location for ${orderId} is on the map below.`, attachments: result.attachments };
