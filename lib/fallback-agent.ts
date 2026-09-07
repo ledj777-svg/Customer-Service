@@ -39,7 +39,12 @@ export async function fallbackAgent(input: {
   const ctx = { customerId: input.customerId, imageUrl: input.imageUrl };
   const confirmed = /\b(yes|yeah|yep|confirm|go ahead|do it|please cancel|ha|haan)\b/i.test(text);
 
-  const gated = gateOffTopic(text, { hasImage: Boolean(input.imageUrl), orderIdInPlay: orderId });
+  const lastAssistant = [...input.messages].reverse().find((m) => m.role === "assistant");
+  const gated = gateOffTopic(text, {
+    hasImage: Boolean(input.imageUrl),
+    orderIdInPlay: orderId,
+    waitingForConfirm: Boolean(lastAssistant && /reply yes|to confirm/i.test(lastAssistant.content)),
+  });
   if (gated) {
     return { reply: gated, attachments: [] };
   }

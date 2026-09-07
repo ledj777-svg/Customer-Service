@@ -23,6 +23,7 @@ Off-topic rule (strict):
 ${SUPPORTER_INTRO}
 
 Greetings like hi/hello/help also get that introduction.
+- If the user only says thanks, ok, fine, cool, or similar after you already helped, reply briefly. Do not look the order up again.
 
 Rules:
 - Never invent order data. Always call tools.
@@ -69,10 +70,12 @@ export async function runSupporter(input: {
     extractOrderId(lastText) ??
     [...input.messages].reverse().map((m) => extractOrderId(m.content)).find(Boolean) ??
     input.activeOrderId;
+  const lastAssistant = [...input.messages].reverse().find((m) => m.role === "assistant");
   const gated = lastUser
     ? gateOffTopic(lastText, {
         hasImage: Boolean(lastUser.imageUrl || input.imageUrl),
         orderIdInPlay,
+        waitingForConfirm: Boolean(lastAssistant && /reply yes|to confirm/i.test(lastAssistant.content)),
       })
     : SUPPORTER_INTRO;
   if (gated) {

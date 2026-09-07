@@ -16,8 +16,21 @@ Demo IDs: SPT-DEMO-TRCK01 (track + QR), SPT-DEMO-CNCL02 (cancel), SPT-DEMO-RPLC0
 const ON_TOPIC =
   /\b(order|orders|track|tracking|where.*package|courier|delivery|deliver|eta|cancel|replace|replacement|exchange|return|refund|cod|cash on delivery|upi|qr|pay|payment|paid|complaint|complain|damaged|broken|wrong item|missing|photo|image|upload|ticket|unique id|spt-|my bag|checkout|cartly|supporter|help)\b/i;
 
-const CONFIRMING = /\b(yes|yeah|yep|confirm|go ahead|do it|please cancel|ha|haan|ok|okay)\b/i;
+const CONFIRMING = /\b(yes|yeah|yep|confirm|go ahead|do it|please cancel|ha|haan)\b/i;
 const GREETING = /^(hi|hello|hey|yo|sup|help|what can you do|who are you)[\s!.,?]*$/i;
+const ACK_REPLY =
+  "You're welcome. I'm here if you need to track, cancel, replace, pay COD, or file a photo complaint.";
+
+export function isAcknowledgement(text: string) {
+  const t = text.trim().toLowerCase();
+  if (!t || t.length > 80) return false;
+  if (extractOrderId(t)) return false;
+  if (/\b(track|cancel|replace|pay|qr|complaint|order|photo|upload|return|refund)\b/i.test(t)) return false;
+  if (/thank/i.test(t) && t.split(/\s+/).length <= 8) return true;
+  return /^(ok(ay)?|k|fine|thanks?( you)?|thx|ty|cool|great|got it|alright|sure|no problem|np|perfect|nice|done|cheers)([\s,!.]+(ok(ay)?|fine|thanks?( you)?|thx|ty))*[\s!.,?]*$/i.test(
+    t,
+  );
+}
 
 export function isOrderContext(text: string, hasImage = false) {
   if (hasImage) return true;
@@ -37,9 +50,13 @@ export function offTopicReply() {
   return `That is outside what I handle.\n\n${SUPPORTER_INTRO}`;
 }
 
-export function gateOffTopic(text: string, opts?: { hasImage?: boolean; orderIdInPlay?: string }) {
+export function gateOffTopic(
+  text: string,
+  opts?: { hasImage?: boolean; orderIdInPlay?: string; waitingForConfirm?: boolean },
+) {
   if (!text.trim() && !opts?.hasImage) return SUPPORTER_INTRO;
   if (GREETING.test(text.trim())) return SUPPORTER_INTRO;
+  if (isAcknowledgement(text) && !opts?.waitingForConfirm) return ACK_REPLY;
   if (shouldReintroduce(text, opts)) return offTopicReply();
   return null;
 }
