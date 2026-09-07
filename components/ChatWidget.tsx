@@ -29,8 +29,7 @@ export function ChatWidget() {
   const [messages, setMessages] = useState<UiMessage[]>([
     {
       role: "assistant",
-      content:
-        "I'm SUPPORTER. Every Cartly order gets a unique ID. Track it, cancel before it ships, replace after delivery, pay COD with a QR, or upload a photo of what arrived.",
+      content: "Hello! How can I assist you today?",
     },
   ]);
   const scroller = useRef<HTMLDivElement>(null);
@@ -42,7 +41,7 @@ export function ChatWidget() {
 
   useEffect(() => {
     if (!open) return;
-    const t = window.setTimeout(() => inputRef.current?.focus(), 520);
+    const t = window.setTimeout(() => inputRef.current?.focus(), 280);
     return () => window.clearTimeout(t);
   }, [open]);
 
@@ -123,121 +122,122 @@ export function ChatWidget() {
   return (
     <>
       {open ? (
-        <aside className="fixed bottom-24 right-5 z-50 flex h-[min(640px,calc(100vh-7.5rem))] w-[min(380px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#10231f] text-[#f4efe6] shadow-[var(--shadow)]">
-        <header className="flex items-start justify-between gap-3 px-4 py-4">
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.22em] text-[#e7b45a]">Cartly care desk</p>
-            <h2 className="display text-2xl">SUPPORTER</h2>
-            <p className="text-xs text-[#c9b89a]">
-              {engine === "grok"
-                ? "Grok on the line"
-                : engine === "local"
-                  ? "Desk mode · add XAI_API_KEY for Grok"
-                  : "Unique-ID support"}
-            </p>
-          </div>
-          <button
-            type="button"
-            className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-lg leading-none"
-            aria-label="Close SUPPORTER"
-            onClick={() => setOpen(false)}
-          >
-            ×
-          </button>
-        </header>
-
-        <div className="flex flex-wrap gap-1.5 px-4 pb-2">
-          {QUICK.map((q) => (
+        <aside className="fixed bottom-24 right-5 z-50 flex h-[min(620px,calc(100vh-7.5rem))] w-[min(380px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-[28px] bg-white text-[#1b1b1f] shadow-[0_18px_50px_rgba(28,16,56,0.22)]">
+          <header className="flex items-center gap-2 border-b border-black/5 px-3 py-3">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#5B2FD6] text-sm font-black text-white">
+              S
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold">SUPPORTER</p>
+              <p className="truncate text-xs text-[#6b6578]">Cartly customer support</p>
+            </div>
             <button
-              key={q.label}
-              className="chip bg-white/10 text-[11px] text-[#f4efe6]"
-              onClick={() => void send(q.text)}
+              type="button"
+              className="grid h-8 w-8 place-items-center rounded-full text-lg text-[#6b6578] hover:bg-black/5"
+              aria-label="Close SUPPORTER"
+              onClick={() => setOpen(false)}
             >
-              {q.label}
+              ×
             </button>
-          ))}
-        </div>
+          </header>
 
-        <div ref={scroller} className="scrollbar-thin flex-1 space-y-3 overflow-auto px-4 py-2">
-          {messages.map((msg, i) => (
-            <div key={i} className={msg.role === "user" ? "ml-8" : "mr-4"}>
-              <div
-                className={`rounded-2xl px-3 py-2 text-sm leading-relaxed ${
-                  msg.role === "user" ? "bg-[#1c3d37]" : "bg-[#f4efe6] text-[#14201c]"
-                } ${msg.pending ? "opacity-70" : ""}`}
-              >
-                {msg.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={msg.imageUrl} alt="Uploaded" className="mb-2 max-h-32 rounded-xl object-cover" />
-                ) : null}
-                {msg.content}
-                {msg.role === "assistant" ? <Attachments items={msg.attachments} onPay={markPaid} /> : null}
+          <div ref={scroller} className="scrollbar-thin flex-1 space-y-3 overflow-auto px-3 py-4">
+            {messages.map((msg, i) => (
+              <div key={i} className={msg.role === "user" ? "flex justify-end" : "flex justify-start"}>
+                <div
+                  className={`max-w-[86%] rounded-[22px] px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
+                    msg.role === "user"
+                      ? "rounded-br-md bg-[#5B2FD6] text-white"
+                      : "rounded-bl-md bg-[#f3f1f6] text-[#1b1b1f]"
+                  } ${msg.pending ? "opacity-70" : ""}`}
+                >
+                  {msg.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={msg.imageUrl} alt="Uploaded" className="mb-2 max-h-32 rounded-xl object-cover" />
+                  ) : null}
+                  {msg.content}
+                  {msg.role === "assistant" ? <Attachments items={msg.attachments} onPay={markPaid} /> : null}
+                </div>
+              </div>
+            ))}
+            {messages.length === 1 ? (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {QUICK.map((q) => (
+                  <button
+                    key={q.label}
+                    className="rounded-full border border-[#5B2FD6]/25 bg-white px-3 py-1.5 text-[11px] text-[#5B2FD6]"
+                    onClick={() => void send(q.text)}
+                  >
+                    {q.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+
+          <form onSubmit={onSubmit} className="px-3 pb-2">
+            {preview ? (
+              <div className="mb-2 flex items-center gap-2 text-xs text-[#6b6578]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={preview} alt="" className="h-10 w-10 rounded-lg object-cover" />
+                <span>Photo ready</span>
+                <button type="button" onClick={() => pickFile(null)} className="underline">
+                  remove
+                </button>
+              </div>
+            ) : null}
+            <div className="rounded-[22px] border border-black/10 bg-white px-3 py-2">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void send(input, file);
+                  }
+                }}
+                rows={1}
+                placeholder="Message..."
+                className="max-h-24 w-full resize-none bg-transparent text-sm outline-none placeholder:text-[#9a94a6]"
+              />
+              <div className="mt-1 flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <label className="grid h-8 w-8 cursor-pointer place-items-center rounded-full text-[#6b6578] hover:bg-black/5" title="Upload photo">
+                    <span className="text-lg leading-none">📎</span>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg"
+                      className="hidden"
+                      onChange={(e) => pickFile(e.target.files?.[0] ?? null)}
+                    />
+                  </label>
+                  <div className="flex flex-wrap gap-1">
+                    {DEMOS.map((id) => (
+                      <button
+                        key={id}
+                        type="button"
+                        className="rounded-full bg-[#f3f1f6] px-2 py-0.5 text-[10px] text-[#5B2FD6]"
+                        onClick={() => setInput((prev) => (prev ? `${prev} ${id}` : id))}
+                      >
+                        {id.replace("SPT-DEMO-", "")}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  disabled={busy || (!input.trim() && !file)}
+                  className="grid h-8 w-8 place-items-center rounded-full bg-[#5B2FD6] text-white disabled:opacity-40"
+                  aria-label="Send"
+                >
+                  ↑
+                </button>
               </div>
             </div>
-          ))}
-        </div>
-
-        <div className="px-4 pb-2">
-          <p className="mb-1 text-[10px] uppercase tracking-[0.16em] text-[#9aa89f]">Demo unique IDs</p>
-          <div className="flex flex-wrap gap-1.5">
-            {DEMOS.map((id) => (
-              <button
-                key={id}
-                className="chip bg-white/10 text-[11px]"
-                onClick={() => setInput((prev) => (prev ? `${prev} ${id}` : id))}
-              >
-                {id}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <form onSubmit={onSubmit} className="border-t border-white/10 p-3">
-          {preview ? (
-            <div className="mb-2 flex items-center gap-2 text-xs">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={preview} alt="" className="h-10 w-10 rounded-lg object-cover" />
-              <span>Photo ready to send</span>
-              <button type="button" onClick={() => pickFile(null)} className="underline">
-                remove
-              </button>
-            </div>
-          ) : null}
-          <div className="flex items-end gap-2">
-            <label
-              className="grid h-11 w-11 cursor-pointer place-items-center rounded-2xl bg-white/10"
-              title="Upload photo of received order"
-            >
-              +
-              <input
-                type="file"
-                accept="image/png,image/jpeg"
-                className="hidden"
-                onChange={(e) => pickFile(e.target.files?.[0] ?? null)}
-              />
-            </label>
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  void send(input, file);
-                }
-              }}
-              rows={1}
-              placeholder="Unique ID + what you need…"
-              className="max-h-28 flex-1 resize-none rounded-2xl bg-white/10 px-3 py-2.5 text-sm outline-none placeholder:text-[#9aa89f]"
-            />
-            <button
-              disabled={busy}
-              className="h-11 rounded-2xl bg-[#e7b45a] px-4 text-sm font-semibold text-[#10231f] disabled:opacity-50"
-            >
-              Send
-            </button>
-          </div>
-        </form>
+            <p className="mt-2 text-center text-[10px] text-[#9a94a6]">
+              {engine === "grok" ? "Powered by Grok · SUPPORTER" : "Powered by SUPPORTER"}
+            </p>
+          </form>
         </aside>
       ) : null}
 
@@ -248,7 +248,9 @@ export function ChatWidget() {
         className="fixed bottom-5 right-5 z-50 grid h-16 w-16 place-items-center rounded-full bg-[#5B2FD6] text-white shadow-[0_10px_28px_rgba(91,47,214,0.45)] transition hover:scale-105"
       >
         {open ? (
-          <span className="text-3xl leading-none">×</span>
+          <svg viewBox="0 0 24 24" className="h-7 w-7" aria-hidden="true">
+            <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         ) : (
           <svg viewBox="0 0 48 48" className="h-8 w-8" aria-hidden="true">
             <path
