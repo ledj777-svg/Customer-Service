@@ -1,6 +1,6 @@
 import { extractOrderId, lastRealOrderId } from "./order-id";
 import { gateOffTopic, SUPPORTER_INTRO } from "./intro";
-import { CUSTOM_REASON, reasonPrompt, REFUND_REPLY, refundFor, thanksForFeedback } from "./reasons";
+import { reasonPrompt, REFUND_REPLY, refundFor, thanksForFeedback } from "./reasons";
 import { getOrder } from "./orders";
 import { runTool } from "./tools";
 import type { ChatAttachment, ChatMessage } from "./types";
@@ -40,14 +40,13 @@ export async function fallbackAgent(input: {
   const lastAssistant = [...input.messages].reverse().find((m) => m.role === "assistant");
   const waitingForConfirm = Boolean(lastAssistant && /reply yes|to confirm/i.test(lastAssistant.content));
   const waitingForReason = Boolean(lastAssistant && /what is the reason|pick one option/i.test(lastAssistant.content));
-  const waitingForReview = Boolean(lastAssistant && /please type your review/i.test(lastAssistant.content));
   const pendingReplace = Boolean(lastAssistant && /replace|replacement/i.test(lastAssistant.content));
   const pendingCancel = Boolean(lastAssistant && /\bcancel/i.test(lastAssistant.content));
   const gated = gateOffTopic(text, {
     hasImage: Boolean(input.imageUrl),
     orderIdInPlay: orderId,
     waitingForConfirm,
-    waitingForReason: waitingForReason || waitingForReview,
+    waitingForReason,
   });
   if (gated) {
     return { reply: gated, attachments: [] };
@@ -101,19 +100,8 @@ export async function fallbackAgent(input: {
     return { reply: thanksForFeedback(kind, order, reason), attachments: result.attachments };
   }
 
-  if (waitingForReview && orderId) {
-    const kind: "cancel" | "replace" = pendingReplace && !pendingCancel ? "replace" : pendingCancel ? "cancel" : pendingReplace ? "replace" : "cancel";
-    return finishAction(kind, text);
-  }
-
   if (waitingForReason && orderId) {
     const kind: "cancel" | "replace" = pendingReplace && !pendingCancel ? "replace" : "cancel";
-    if (text.trim().toLowerCase() === CUSTOM_REASON.toLowerCase()) {
-      return {
-        reply: "Please type your review — what went wrong, or what you expected.",
-        attachments: [],
-      };
-    }
     if (/^(yes|yeah|yep|ok|okay)$/i.test(text.trim())) {
       return reasonPrompt(kind, orderId);
     }

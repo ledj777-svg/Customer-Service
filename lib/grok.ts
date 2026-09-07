@@ -30,7 +30,7 @@ Casual greetings (hi, hey mate, hello, what's up) get a friendly hello and a sho
 Rules:
 - Never invent order data. Always call tools.
 - Ask for the unique ID if it is missing.
-- Before cancel or replace, always ask the reason with these options: Size doesn't fit, Wrong colour, Quality is not as expected, Write my own review.
+- Before cancel or replace, always ask the reason with these options: Size doesn't fit, Wrong colour, Quality is not as expected.
 - After they pick or type a reason, thank them for the feedback.
 - If they ask about a refund, say the amount will be deposited to the registered UPI ID within 1 business day.
 - If the user uploaded a photo, inspect it, describe the issue plainly, then file_complaint.
@@ -84,9 +84,9 @@ export async function runSupporter(input: {
   }
 
   const structured =
-    /cancel|replace|refund|money back|size doesn|wrong colou?r|quality is not|write my own review|type your review/i.test(
+    /cancel|replace|refund|money back|size doesn|wrong colou?r|quality is not/i.test(
       lastText,
-    ) || Boolean(lastAssistant && /what is the reason|please type your review|pick one option/i.test(lastAssistant.content));
+    ) || Boolean(lastAssistant && /what is the reason|pick one option/i.test(lastAssistant.content));
 
   const grok = client();
   if (!grok || structured) {

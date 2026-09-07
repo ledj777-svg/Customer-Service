@@ -4,10 +4,7 @@ export const REASON_OPTIONS = [
   "Size doesn't fit",
   "Wrong colour",
   "Quality is not as expected",
-  "Write my own review",
 ] as const;
-
-export const CUSTOM_REASON = "Write my own review";
 
 export const REFUND_REPLY =
   "The amount will be deposited to the registered UPI ID within 1 business day.";
@@ -30,7 +27,7 @@ export function reasonPrompt(kind: "cancel" | "replace", orderId: string): {
 } {
   const verb = kind === "cancel" ? "cancel" : "replace";
   return {
-    reply: `What is the reason you want to ${verb} ${orderId}?\nPick one option below, or choose Write my own review to type your opinion.`,
+    reply: `What is the reason you want to ${verb} ${orderId}?\nPick one option below.`,
     attachments: [{ type: "choices", options: [...REASON_OPTIONS] }],
   };
 }
