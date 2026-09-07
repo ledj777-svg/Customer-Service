@@ -17,7 +17,7 @@ export default function Home() {
           <ol className="mt-8 grid gap-3 sm:grid-cols-3">
             {[
               ["01", "Place the order", "COD or prepaid. You get SPT-XXXX-XXXXXX."],
-              ["02", "Open SUPPORTER", "Bottom-right. Paste the unique ID."],
+              ["02", "Open SUPPORTER", "Tap the purple chat icon. Paste the unique ID."],
               ["03", "Act on it", "Track, cancel, replace, pay, or complain."],
             ].map(([n, t, d]) => (
               <li key={n} className="rounded-2xl border border-[var(--line)] bg-white/50 p-4">

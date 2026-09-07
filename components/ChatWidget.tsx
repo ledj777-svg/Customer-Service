@@ -18,13 +18,8 @@ const DEMOS = ["SPT-DEMO-TRCK01", "SPT-DEMO-CNCL02", "SPT-DEMO-RPLC03"];
 
 type UiMessage = ChatMessage & { pending?: boolean };
 
-export function ChatWidget({
-  open,
-  onOpenChange,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
+export function ChatWidget() {
+  const [open, setOpen] = useState(false);
   const { customerId } = useCart();
   const [input, setInput] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -127,40 +122,8 @@ export function ChatWidget({
 
   return (
     <>
-      <button
-        type="button"
-        aria-label="Open SUPPORTER"
-        onClick={() => onOpenChange(true)}
-        className={`fixed top-1/2 right-0 z-40 flex -translate-y-1/2 flex-col items-center gap-2 rounded-l-2xl bg-[var(--teal-deep)] px-2 py-5 text-[#f4efe6] shadow-[var(--shadow)] transition-transform duration-500 ${
-          open ? "translate-x-full pointer-events-none" : "translate-x-0"
-        }`}
-      >
-        <span className="grid h-8 w-8 place-items-center rounded-full bg-[#e7b45a] text-xs font-black text-[#10231f]">
-          S
-        </span>
-        <span
-          className="display text-sm tracking-[0.18em]"
-          style={{ writingMode: "vertical-rl" }}
-        >
-          SUPPORTER
-        </span>
-      </button>
-
       {open ? (
-        <button
-          type="button"
-          aria-label="Dismiss SUPPORTER backdrop"
-          className="fixed inset-0 z-40 bg-[#10231f]/25 lg:hidden"
-          onClick={() => onOpenChange(false)}
-        />
-      ) : null}
-
-      <aside
-        aria-hidden={!open}
-        className={`supporter-dock fixed inset-y-0 right-0 z-50 flex w-[min(400px,100vw)] flex-col border-l border-white/10 bg-[#10231f] text-[#f4efe6] shadow-[var(--shadow)] transition-transform duration-500 ease-out ${
-          open ? "translate-x-0" : "translate-x-full"
-        }`}
-      >
+        <aside className="fixed bottom-24 right-5 z-50 flex h-[min(640px,calc(100vh-7.5rem))] w-[min(380px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#10231f] text-[#f4efe6] shadow-[var(--shadow)]">
         <header className="flex items-start justify-between gap-3 px-4 py-4">
           <div>
             <p className="text-[10px] uppercase tracking-[0.22em] text-[#e7b45a]">Cartly care desk</p>
@@ -173,8 +136,13 @@ export function ChatWidget({
                   : "Unique-ID support"}
             </p>
           </div>
-          <button className="chip bg-white/10 text-[#f4efe6]" onClick={() => onOpenChange(false)}>
-            Hide
+          <button
+            type="button"
+            className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-lg leading-none"
+            aria-label="Close SUPPORTER"
+            onClick={() => setOpen(false)}
+          >
+            ×
           </button>
         </header>
 
@@ -270,7 +238,33 @@ export function ChatWidget({
             </button>
           </div>
         </form>
-      </aside>
+        </aside>
+      ) : null}
+
+      <button
+        type="button"
+        aria-label={open ? "Close SUPPORTER" : "Open SUPPORTER"}
+        onClick={() => setOpen((value) => !value)}
+        className="fixed bottom-5 right-5 z-50 grid h-16 w-16 place-items-center rounded-full bg-[#5B2FD6] text-white shadow-[0_10px_28px_rgba(91,47,214,0.45)] transition hover:scale-105"
+      >
+        {open ? (
+          <span className="text-3xl leading-none">×</span>
+        ) : (
+          <svg viewBox="0 0 48 48" className="h-8 w-8" aria-hidden="true">
+            <path
+              fill="currentColor"
+              d="M10 12.5c0-2.5 2-4.5 4.5-4.5h19c2.5 0 4.5 2 4.5 4.5v15c0 2.5-2 4.5-4.5 4.5H22.2L15 38v-6.5H14.5C12 31.5 10 29.5 10 27z"
+            />
+            <path
+              d="M18.2 22.2c1.4 2.2 3.4 3.4 5.8 3.4s4.4-1.2 5.8-3.4"
+              stroke="#5B2FD6"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              fill="none"
+            />
+          </svg>
+        )}
+      </button>
     </>
   );
 }
